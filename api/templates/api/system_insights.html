@@ -1,0 +1,40 @@
+
+{% extends "api/base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Insights</title>
+    <style>
+        body { font-family: Arial; background: #f3f4f6; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .card { background: #e0f2fe; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>System Insights</h1>
+
+    <div class="card">
+        <strong>Total Orders Today:</strong> {{ total_orders_today }}
+    </div>
+
+    <div class="card">
+        <strong>Average ETA (minutes):</strong> {{ avg_eta_minutes|default:"0"|floatformat:1 }}
+    </div>
+
+    <div class="card">
+        <strong>Total CO2 Emissions (kg):</strong> {{ total_co2_emissions_kg|default:"0"|floatformat:1 }}
+    </div>
+
+    <div class="card">
+        <strong>Best Courier:</strong> {{ best_courier|default:"-" }}
+    </div>
+</div>
+</body>
+</html>
+
+{% endblock %}
+

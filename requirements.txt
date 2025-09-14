@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+fastapi
+uvicorn
+pydantic
+joblib
+matplotlib
+djangorestframework 
+djangorestframework-simplejwt
+geopy
+

@@ -1,0 +1,828 @@
+{% extends "api/base.html" %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mfumo wa Utabiri wa Muda wa Kufikisha</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --light: #f3f4f6;
+            --dark: #1f2937;
+            --gray: #9ca3af;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light);
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #0d9669;
+        }
+        
+        .result-box {
+            background: var(--light);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        .eta-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--light);
+        }
+        
+        th {
+            background: var(--primary);
+            color: white;
+        }
+        
+        tr:hover {
+            background: #f9fafb;
+        }
+        
+        .location-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .location-btn {
+            flex: 1;
+            background: var(--light);
+            border: 1px solid var(--gray);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .location-btn:hover {
+            background: #e5e7eb;
+        }
+        
+        .location-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 1rem;
+        }
+        
+        .stat-box {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        .tab-container {
+            margin-top: 1rem;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--light);
+            margin-bottom: 1rem;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1.5rem;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .distance-info {
+            background: #e0f2fe;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mfumo wa Utabiri wa Muda wa Kufikisha</h1>
+            <p class="subtitle">Panga na ufikirie muda wa kufikisha kwa usahihi zaidi</p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="left-column">
+                <!-- Fomu ya Oda Moja -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <i>📦</i> Ongeza Oda Mpya
+                    </h2>
+                    
+                    <div class="form-group">
+                        <label for="order_id">Namba ya Oda</label>
+                        <input type="text" id="order_id" placeholder="OD12345">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="from_city_name">Jiji/Mji</label>
+                        <select id="from_city_name">
+                            <option value="">Chagua Jiji</option>
+                            <option value="Dar es Salaam">Dar es Salaam</option>
+                            <option value="Mbeya">Mbeya</option>
+                            <option value="Arusha">Arusha</option>
+                            <option value="Mwanza">Mwanza</option>
+                            <option value="Dodoma">Dodoma</option>
+                            <option value="Tanga">Tanga</option>
+                            <option value="Morogoro">Morogoro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Eneo la Kuchukulia Bidhaa (POI)</label>
+                        <div class="location-buttons">
+                            <div class="location-btn active" data-lat="-6.823" data-lng="39.269" data-city="Dar es Salaam">Dar es Salaam</div>
+                            <div class="location-btn" data-lat="-8.909" data-lng="33.456" data-city="Mbeya">Mbeya</div>
+                            <div class="location-btn" data-lat="-3.386" data-lng="36.683" data-city="Arusha">Arusha</div>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" step="0.000001" id="poi_lat" placeholder="Latitude" value="-6.823">
+                            <input type="number" step="0.000001" id="poi_lng" placeholder="Longitude" value="39.269">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="receipt_time">Muda wa Kupokea</label>
+                        <input type="datetime-local" id="receipt_time">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Eneo la Kufikia (Receipt)</label>
+                        <div class="location-buttons">
+                            <div class="location-btn active" data-lat="-6.800" data-lng="39.283" data-city="Dar es Salaam">Dar es Salaam</div>
+                            <div class="location-btn" data-lat="-8.900" data-lng="33.450" data-city="Mbeya">Mbeya</div>
+                            <div class="location-btn" data-lat="-3.360" data-lng="36.650" data-city="Arusha">Arusha</div>
+                        </div>
+                        <input type="number" step="0.000001" id="receipt_lat" placeholder="Latitude" value="-6.800">
+                        <input type="number" step="0.000001" id="receipt_lng" placeholder="Longitude" value="39.283">
+                    </div>
+                    <!-- Fomu ya Oda Moja - Maboresho kwa Optional Fields -->
+<div class="form-group">
+    <label for="sign_time">Muda wa Sahihi (Optional)</label>
+    <input type="datetime-local" id="sign_time">
+</div>
+
+<div class="form-group">
+    <label for="typecode">Typecode (Optional)</label>
+    <input type="text" id="typecode" placeholder="Tumia ikiwa inapatikana">
+</div>
+
+<div class="form-group">
+    <label for="aoi_id">AOI ID (Optional)</label>
+    <input type="text" id="aoi_id" placeholder="Tumia ikiwa inapatikana">
+</div>
+
+                    
+                    <div class="distance-info" id="distanceInfo">
+                        Umbali: 0 km
+                    </div>
+                    
+                    <button class="btn" onclick="submitSingleOrder()">
+                        <i>⚡</i> Tabiri Muda wa Kufikisha
+                    </button>
+                    
+                    <div id="singleOrderResult" class="result-box" style="display: none;">
+                        <div class="result-title">Matokeo ya Utabiri:</div>
+                        <div class="eta-value" id="etaValue">-</div>
+                        <p id="etaDetails">Muda unaotabiriwa kufikisha oda hii</p>
+                    </div>
+                </div>
+                
+                <!-- Oda Nyingi -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <i>📋</i> Oda Nyingi
+                    </h2>
+                    
+                    <div class="form-group">
+                        <label for="ordersInput">Weka oda za JSON (nyingi)</label>
+                        <textarea id="ordersInput" rows="5" placeholder='[
+  {
+    "order_id": "OD123",
+    "from_city_name": "Dar es Salaam",
+    "poi_lat": -6.823,
+    "poi_lng": 39.269,
+    "receipt_time": "2023-09-14 10:00:00",
+    "receipt_lat": -6.800,
+    "receipt_lng": 39.283
+  }
+]'></textarea>
+                    </div>
+                    
+                    <button class="btn" onclick="predictMultipleOrders()">
+                        <i>🔍</i> Tafuta Muda wa Kufikisha kwa Oda Zote
+                    </button>
+                    
+                    <div id="etaResults" style="display: none;">
+                        <h3>Matokeo ya Oda Nyingi</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Namba ya Oda</th>
+                                    <th>Muda (dakika)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="etaResultsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-column">
+                <!-- Taarifa za Mfumo -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <i>📊</i> Taarifa za Mfumo
+                    </h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalOrders">0</div>
+                            <div class="stat-label">Oda Leo</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="avgEta">0</div>
+                            <div class="stat-label">Muda wa Wastani</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="co2Emissions">0</div>
+                            <div class="stat-label">CO2 (kg)</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="bestCourier">-</div>
+                            <div class="stat-label">Mwendo Bora</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-secondary" onclick="loadSystemInsights()">
+                        <i>🔄</i> Pakua Taarifa Mpya
+                    </button>
+                </div>
+                
+                <!-- Wafanyikazi Bora -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <i>🏆</i> Wafanyikazi Bora
+                    </h2>
+                    
+                    <button class="btn" onclick="loadCourierPerformance()">
+                        <i>👤</i> Orodha ya Wafanyikazi
+                    </button>
+                    
+                    <div id="courierResults" style="display: none;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Jina</th>
+                                    <th>Aina ya Gari</th>
+                                    <th>Oda</th>
+                                    <th>Muda (dakika)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courierResultsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Msaada na Maelekezo -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <i>❓</i> Maelekezo ya Matumizi
+                    </h2>
+                    
+                    <div class="tab-container">
+                        <div class="tabs">
+                            <div class="tab active" data-tab="basic">Maelezo ya Msingi</div>
+                            <div class="tab" data-tab="locations">Maeneo</div>
+                            <div class="tab" data-tab="troubleshooting">Matatizo</div>
+                        </div>
+                        
+                        <div class="tab-content active" id="basic-tab">
+                            <p><strong>Jinsi ya kutumia:</strong></p>
+                            <ul style="padding-left: 20px; margin-top: 10px;">
+                                <li>Jaza fomu ya kushoto kwa taarifa za oda</li>
+                                <li>Bofya kituo cha "Tabiri Muda wa Kufikisha"</li>
+                                <li>Angalia matokeo kwenye sehemu ya matokeo</li>
+                                <li>Kwa oda nyingi, tumia sehemu ya chini</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tab-content" id="locations-tab">
+                            <p><strong>Viwango vya anwani za kawaida:</strong></p>
+                            <ul style="padding-left: 20px; margin-top: 10px;">
+                                <li><strong>Dar es Salaam:</strong> Lat: -6.823, Lng: 39.269</li>
+                                <li><strong>Mbeya:</strong> Lat: -8.909, Lng: 33.456</li>
+                                <li><strong>Arusha:</strong> Lat: -3.386, Lng: 36.683</li>
+                                <li><strong>Mwanza:</strong> Lat: -2.517, Lng: 32.904</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tab-content" id="troubleshooting-tab">
+                            <p><strong>Matatizo Yanayowezekana:</strong></p>
+                            <ul style="padding-left: 20px; margin-top: 10px;">
+                                <li>Hakikisha umeweka anwani zote za kijiografia</li>
+                                <li>Thibitisha kuwa data yako ina safu ya <code>trip_km</code></li>
+                                <li>Rudi nyuma na uhakikishe data yako iko sawa</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Mfumo wa Utabiri wa Muda wa Kufikisha &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script>
+        // Set current datetime as default
+        document.getElementById('receipt_time').value = new Date().toISOString().slice(0, 16);
+        
+        // Calculate distance between two points using Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Update distance when coordinates change
+        function updateDistance() {
+            const poiLat = parseFloat(document.getElementById('poi_lat').value);
+            const poiLng = parseFloat(document.getElementById('poi_lng').value);
+            const receiptLat = parseFloat(document.getElementById('receipt_lat').value);
+            const receiptLng = parseFloat(document.getElementById('receipt_lng').value);
+            
+            if (!isNaN(poiLat) && !isNaN(poiLng) && !isNaN(receiptLat) && !isNaN(receiptLng)) {
+                const distance = calculateDistance(poiLat, poiLng, receiptLat, receiptLng);
+                document.getElementById('distanceInfo').textContent = `Umbali: ${distance.toFixed(2)} km`;
+            }
+        }
+        
+        // Location buttons functionality for POI
+        document.querySelectorAll('.card:first-child .location-buttons:first-child .location-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.card:first-child .location-buttons:first-child .location-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const lat = this.getAttribute('data-lat');
+                const lng = this.getAttribute('data-lng');
+                document.getElementById('poi_lat').value = lat;
+                document.getElementById('poi_lng').value = lng;
+                updateDistance();
+            });
+        });
+        
+        // Location buttons functionality for Receipt
+        document.querySelectorAll('.card:first-child .location-buttons:nth-child(5) .location-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.card:first-child .location-buttons:nth-child(5) .location-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const lat = this.getAttribute('data-lat');
+                const lng = this.getAttribute('data-lng');
+                document.getElementById('receipt_lat').value = lat;
+                document.getElementById('receipt_lng').value = lng;
+                updateDistance();
+            });
+        });
+        
+        // Update distance when coordinates are manually changed
+        document.getElementById('poi_lat').addEventListener('input', updateDistance);
+        document.getElementById('poi_lng').addEventListener('input', updateDistance);
+        document.getElementById('receipt_lat').addEventListener('input', updateDistance);
+        document.getElementById('receipt_lng').addEventListener('input', updateDistance);
+        
+        // Initialize distance calculation
+        updateDistance();
+        
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+        
+       async function submitSingleOrder() {
+    const receiptTime = document.getElementById('receipt_time').value;
+    if (!receiptTime) {
+        alert('Tafadhali weka muda wa kupokea');
+        return;
+    }
+
+    const poiLat = parseFloat(document.getElementById('poi_lat').value);
+    const poiLng = parseFloat(document.getElementById('poi_lng').value);
+    const receiptLat = parseFloat(document.getElementById('receipt_lat').value);
+    const receiptLng = parseFloat(document.getElementById('receipt_lng').value);
+    
+    if (isNaN(poiLat) || isNaN(poiLng) || isNaN(receiptLat) || isNaN(receiptLng)) {
+        alert('Tafadhali hakiki anwani zako za kijiografia');
+        return;
+    }
+
+    const distance = calculateDistance(poiLat, poiLng, receiptLat, receiptLng);
+
+    // Optional fields
+    const signTime = document.getElementById('sign_time').value;
+    const typecode = document.getElementById('typecode').value;
+    const aoiId = document.getElementById('aoi_id').value;
+
+    const order = {
+        order_id: document.getElementById('order_id').value || `OD${Math.floor(Math.random() * 10000)}`,
+        from_city_name: document.getElementById('from_city_name').value,
+        poi_lat: poiLat,
+        poi_lng: poiLng,
+        receipt_time: receiptTime.replace('T', ' ') + ':00',
+        receipt_lat: receiptLat,
+        receipt_lng: receiptLng,
+        sign_time: signTime || '',       // optional
+        typecode: typecode || '',        // optional
+        aoi_id: aoiId || '',             // optional
+        trip_km: distance
+    };
+
+    const resultDiv = document.getElementById('singleOrderResult');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="loading"></div> Inatafuta...';
+
+    try {
+        const res = await fetch('/predict-eta/', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({orders: [order]})
+        });
+
+        const data = await res.json();
+        if(data.success) {
+            const p = data.predictions[0];
+            let message = "";
+            if (p.eta_minutes < 30) message = "✅ Muda mfupi sana! Oda itafika haraka.";
+            else if (p.eta_minutes < 60) message = "⏱️ Muda wa kawaida. Oda itafika kwa kiasi cha saa moja.";
+            else message = "⚠️ Muda mrefu. Inashauriwa kutumia njia mbadala.";
+
+            resultDiv.innerHTML = `
+                <div class="result-title">Matokeo ya Utabiri:</div>
+                <div class="eta-value">${p.eta_minutes.toFixed(1)} dakika</div>
+                <p>${message}</p>
+                <p>Umbali: ${distance.toFixed(2)} km</p>
+            `;
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="alert alert-error">Hitilafu ya mtandao: ${error.message}</div>`;
+    }
+}
+
+        
+        async function predictMultipleOrders() {
+            const ordersInput = document.getElementById('ordersInput').value;
+            if (!ordersInput) {
+                alert('Tafadhali weka oda za JSON');
+                return;
+            }
+            
+            let orders;
+            try {
+                orders = JSON.parse(ordersInput);
+                
+                // Add trip_km to each order if not present
+                orders = orders.map(order => {
+                    if (!order.trip_km && order.poi_lat && order.poi_lng && order.receipt_lat && order.receipt_lng) {
+                        order.trip_km = calculateDistance(
+                            order.poi_lat, order.poi_lng, 
+                            order.receipt_lat, order.receipt_lng
+                        );
+                    }
+                    return order;
+                });
+            } catch (e) {
+                alert('Umeweka oda zisizo sahihi. Tafadhali hakiki tena');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('etaResults');
+            resultsDiv.style.display = 'block';
+            document.getElementById('etaResultsBody').innerHTML = '<tr><td colspan="2"><div class="loading"></div> Inatafuta...</td></tr>';
+            
+            try {
+                const res = await fetch('/predict-eta/', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({orders})
+                });
+                
+                const data = await res.json();
+                if(data.success) {
+                    let html = '';
+                    data.predictions.forEach(p => {
+                        html += `<tr><td>${p.order_id}</td><td>${p.eta_minutes.toFixed(1)}</td></tr>`;
+                    });
+                    document.getElementById('etaResultsBody').innerHTML = html;
+                } else {
+                    document.getElementById('etaResultsBody').innerHTML = `<tr><td colspan="2">${data.error}</td></tr>`;
+                }
+            } catch (error) {
+                document.getElementById('etaResultsBody').innerHTML = `<tr><td colspan="2">Hitilafu ya mtandao: ${error.message}</td></tr>`;
+            }
+        }
+        
+        async function loadCourierPerformance() {
+            const resultsDiv = document.getElementById('courierResults');
+            resultsDiv.style.display = 'block';
+            document.getElementById('courierResultsBody').innerHTML = '<tr><td colspan="4"><div class="loading"></div> Inapakua...</td></tr>';
+            
+            try {
+                const res = await fetch('/courier-performance/');
+                const data = await res.json();
+                if(data.success) {
+                    let html = '';
+                    data.leaderboard.forEach(c => {
+                        html += `
+                            <tr>
+                                <td>${c.name}</td>
+                                <td>${c.vehicle_type}</td>
+                                <td>${c.total_orders}</td>
+                                <td>${c.avg_delay_min ? c.avg_delay_min.toFixed(1) : '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('courierResultsBody').innerHTML = html;
+                } else {
+                    document.getElementById('courierResultsBody').innerHTML = `<tr><td colspan="4">${data.error}</td></tr>`;
+                }
+            } catch (error) {
+                document.getElementById('courierResultsBody').innerHTML = `<tr><td colspan="4">Hitilafu ya mtandao: ${error.message}</td></tr>`;
+            }
+        }
+        
+ async function loadSystemInsights() {
+    try {
+        const res = await fetch('/system-insights/');
+        const data = await res.json();
+        console.log("System insights raw data:", data);  // 👈 chapisha hapa
+        if(data.success) {
+            const i = data.insights;
+            document.getElementById('totalOrders').textContent = i.total_orders_today || '0';
+            document.getElementById('avgEta').textContent = i.avg_eta_minutes ? i.avg_eta_minutes.toFixed(1) : '0';
+            document.getElementById('co2Emissions').textContent = i.total_co2_emissions_kg ? i.total_co2_emissions_kg.toFixed(1) : '0';
+            document.getElementById('bestCourier').textContent = i.best_courier ? i.best_courier.name.substring(0, 8) + '...' : '-';
+        }
+    } catch (error) {
+        console.error('Error loading system insights:', error);
+    }
+}
+
+
+// Load initial system insights
+loadSystemInsights();
+
+    </script>
+</body>
+
+{% endblock %}

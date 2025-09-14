@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}System Insights{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+        nav { background:#2563eb; color:white; padding:1rem; display:flex; justify-content:space-between; align-items:center; }
+        nav a { color:white; margin-right:1rem; text-decoration:none; font-weight:bold; }
+        nav a:hover { text-decoration:underline; }
+        main { padding:2rem; }
+        footer { background:#1e40af; color:white; text-align:center; padding:1rem; position:fixed; bottom:0; width:100%; }
+        .card { background:white; padding:1rem; margin-bottom:1rem; border-radius:0.5rem; box-shadow:0 0 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-left">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'predict_eta_page' %}">Predict ETA</a>
+            <a href="{% url 'route_search' %}">Route Co2</a>
+
+            <a href="{% url 'system_insights_page' %}">System Insights</a>
+        </div>
+        <div class="nav-right">
+            User: Admin
+        </div>
+    </nav>
+    <main>
+        {% block content %} {% endblock %}
+    </main>
+    <footer>
+        &copy; 2025 System Insights
+    </footer>
+</body>
+</html>
