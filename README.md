@@ -54,13 +54,14 @@ source env/bin/activate
 pip install -r requirements.txt
 
 # 2) Ku train model 
-python -m scripts.train_model
 
+python train_model.py
 # 2) Explore data + train a baseline model
 # jupyter notebook notebooks/starter_notebook.ipynb
 
 # 3) Run API (after training writes model.pkl + feature_columns.json)
-uvicorn app.main:app --reload --port 8000
+# uvicorn app.main:app --reload --port 8000
+python manage.py runserver 0.0.0.0:8000
 ```
 
 ## Expected Columns (clean names)
@@ -82,3 +83,10 @@ We normalize column names and handle common typos:
 - Add graph routing (OSMNX) for realistic network distance/speed
 - Learn-to-rank for courier assignment (pairwise ranking model)
 - Real-time incident features (weather/events) if available
+
+![Dashboard ya Project](static/images/Screenshot from 2025-09-14 21-22-17.png)
+![Dashboard ya Project](static/images/Screenshot from 2025-09-14 21-22-37.png)
+![Dashboard ya Project](static/images/Screenshot from 2025-09-14 21-22-44.png)
+![Dashboard ya Project](static/images/Screenshot from 2025-09-14 21-23-08.png)
+![Dashboard ya Project](static/images/Screenshot from 2025-09-14 21-23-22.png)
+

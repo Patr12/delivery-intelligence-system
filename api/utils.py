@@ -5,6 +5,8 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from scipy.sparse import csr_matrix
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
 import gc
 
 # --- Haversine distance (optimized) ---
@@ -191,3 +193,90 @@ def greedy_assign(orders_df, couriers_df):
         })
     
     return pd.DataFrame(assignments)
+
+
+def rule_based_flags(df):
+    """Apply rule-based anomaly detection flags"""
+    df = df.copy()
+    
+    # Duration-based flags
+    if 'delivery_duration_min' in df.columns:
+        df['flag_duration'] = ((df['delivery_duration_min'] < 5) |  # Less than 5 minutes
+                              (df['delivery_duration_min'] > 720)).astype(int)  # More than 12 hours
+    else:
+        df['flag_duration'] = 0
+    
+    # Item-based flags (if available)
+    if 'num_items' in df.columns:
+        df['flag_items'] = (df['num_items'] > 50).astype(int)  # More than 50 items
+    else:
+        df['flag_items'] = 0
+    
+    # Distance-based flags
+    if 'trip_km' in df.columns:
+        df['flag_distance'] = ((df['trip_km'] < 0.1) |  # Less than 100m
+                              (df['trip_km'] > 100)).astype(int)  # More than 100km
+    else:
+        df['flag_distance'] = 0
+    
+    return df
+
+def isolation_forest_flags(df, feature_cols, contamination=0.05):
+    """Apply Isolation Forest for anomaly detection"""
+    if len(df) < 10:  # Need minimum samples
+        df['flag_iforest'] = 0
+        df['anomaly_score'] = 0
+        return df
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(df[feature_cols].fillna(0))
+    
+    # Apply Isolation Forest
+    iso = IsolationForest(
+        contamination=contamination, 
+        random_state=42,
+        n_estimators=100
+    )
+    
+    iso_labels = iso.fit_predict(X_scaled)
+    df['flag_iforest'] = (iso_labels == -1).astype(int)
+    df['anomaly_score'] = iso.decision_function(X_scaled)
+    
+    return df
+
+def hybrid_anomaly_detection(df, feature_cols):
+    """Hybrid anomaly detection combining rules and machine learning"""
+    df = rule_based_flags(df)
+    df = isolation_forest_flags(df, feature_cols)
+    
+    # Combine all flags
+    flag_columns = [col for col in df.columns if col.startswith('flag_')]
+    df['anomaly'] = df[flag_columns].max(axis=1).astype(int)
+    
+    return df
+
+def calculate_anomaly_metrics(df):
+    """Calculate detailed anomaly metrics"""
+    metrics = {
+        'total_orders': len(df),
+        'anomaly_count': df['anomaly'].sum(),
+        'anomaly_percentage': (df['anomaly'].sum() / len(df) * 100) if len(df) > 0 else 0,
+        'flag_breakdown': {}
+    }
+    
+    # Count each type of flag
+    flag_columns = [col for col in df.columns if col.startswith('flag_')]
+    for flag in flag_columns:
+        metrics['flag_breakdown'][flag] = df[flag].sum()
+    
+    return metrics
+
+def export_anomalies_to_csv(df, filename='anomalies_report.csv'):
+    """Export anomalies to CSV file"""
+    anomaly_df = df[df['anomaly'] == 1].copy()
+    if not anomaly_df.empty:
+        anomaly_df.to_csv(filename, index=False)
+        return filename
+    return None
+

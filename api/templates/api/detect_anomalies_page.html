@@ -1,0 +1,178 @@
+{% extends "api/base.html" %}
+{% block title %}Detect Anomalies{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="title">🚨 Detect Anomalies in Deliveries</h1>
+
+    <!-- Input Form -->
+    <div class="card">
+        <h2>1️⃣ Add Order</h2>
+        <form id="orderForm" onsubmit="addOrder(event)" class="form-grid">
+            <label>Order ID:
+                <input type="text" id="order_id" required>
+            </label>
+            <label>From City:
+                <input type="text" id="from_city_name" required>
+            </label>
+            <label>POI Lat:
+                <input type="number" id="poi_lat" step="any" required>
+            </label>
+            <label>POI Lng:
+                <input type="number" id="poi_lng" step="any" required>
+            </label>
+            <label>Receipt Lat:
+                <input type="number" id="receipt_lat" step="any" required>
+            </label>
+            <label>Receipt Lng:
+                <input type="number" id="receipt_lng" step="any" required>
+            </label>
+            <label>Receipt Time:
+                <input type="datetime-local" id="receipt_time" required>
+            </label>
+            <label>Sign Time:
+                <input type="datetime-local" id="sign_time" required>
+            </label>
+            <button type="submit" class="btn btn-add">➕ Add Order</button>
+        </form>
+    </div>
+
+    <!-- Orders Preview -->
+    <div class="card">
+        <h2>2️⃣ Orders List</h2>
+        <ul id="ordersList" class="orders-list"></ul>
+        <button onclick="detectAnomalies()" class="btn btn-primary">🚀 Detect Anomalies</button>
+    </div>
+
+    <!-- Results -->
+    <div class="card">
+        <h2>3️⃣ Results</h2>
+        <table id="anomaliesTable" class="styled-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>City</th>
+                    <th>Duration (min)</th>
+                    <th>Distance (km)</th>
+                    <th>Anomaly</th>
+                    <th>Flags</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.container { max-width: 1000px; margin: auto; padding: 20px; }
+.title { text-align: center; margin-bottom: 20px; color: #1e40af; }
+.card { background: #fff; padding: 20px; margin: 15px 0; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);}
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; }
+label { display: flex; flex-direction: column; font-weight: 500; color: #374151; }
+input { padding: 8px; margin-top: 5px; border: 1px solid #d1d5db; border-radius: 8px; outline: none; transition: 0.3s; }
+input:focus { border-color: #2563eb; box-shadow: 0 0 4px rgba(37,99,235,0.3); }
+.btn { display: inline-block; padding: 10px 16px; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+.btn-add { background: #10b981; color: white; }
+.btn-primary { background: #2563eb; color: white; }
+.btn:hover { opacity: 0.9; transform: translateY(-2px); }
+.orders-list { list-style: none; padding: 0; }
+.orders-list li { padding: 8px 10px; margin: 5px 0; background: #f3f4f6; border-radius: 6px; display: flex; justify-content: space-between; }
+.orders-list button { background: #ef4444; color: white; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+.styled-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+.styled-table th, .styled-table td { padding: 12px; border: 1px solid #e5e7eb; text-align: center; }
+.styled-table th { background: #2563eb; color: white; }
+.styled-table tr:nth-child(even) { background: #f9fafb; }
+.styled-table tr:hover { background: #f3f4f6; }
+</style>
+
+<script>
+let orders = [];
+
+function addOrder(e) {
+    e.preventDefault();
+    const order = {
+        order_id: document.getElementById("order_id").value,
+        from_city_name: document.getElementById("from_city_name").value,
+        poi_lat: parseFloat(document.getElementById("poi_lat").value),
+        poi_lng: parseFloat(document.getElementById("poi_lng").value),
+        receipt_lat: parseFloat(document.getElementById("receipt_lat").value),
+        receipt_lng: parseFloat(document.getElementById("receipt_lng").value),
+        receipt_time: document.getElementById("receipt_time").value,
+        sign_time: document.getElementById("sign_time").value
+    };
+    orders.push(order);
+    renderOrders();
+    e.target.reset();
+}
+
+function renderOrders() {
+    const list = document.getElementById("ordersList");
+    list.innerHTML = "";
+    orders.forEach((o, idx) => {
+        list.innerHTML += `<li>
+            <span>${o.order_id} - ${o.from_city_name}</span>
+            <button onclick="removeOrder(${idx})">❌</button>
+        </li>`;
+    });
+}
+
+function removeOrder(index) {
+    orders.splice(index, 1);
+    renderOrders();
+}
+
+async function detectAnomalies() {
+    if (orders.length === 0) {
+        alert("⚠️ Please add at least one order!");
+        return;
+    }
+
+    const response = await fetch("/api/detect_anomalies/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({orders: orders})
+    });
+
+    const data = await response.json();
+    console.log("DEBUG response:", data);
+
+    const tbody = document.querySelector("#anomaliesTable tbody");
+    tbody.innerHTML = "";
+
+    if (data.success) {
+        data.anomalies.forEach(a => {
+            tbody.innerHTML += `
+                <tr style="${a.anomaly === 1 ? 'background-color:#fee2e2;' : ''}">
+                    <td>${a.order_id}</td>
+                    <td>${a.from_city}</td>
+                    <td>${a.duration_min}</td>
+                    <td>${a.trip_km}</td>
+                    <td>${a.anomaly === 1 ? "🚨 Yes" : "✅ No"}</td>
+                    <td>D:${a.flags.duration_flag} | I:${a.flags.items_flag} | F:${a.flags.iforest_flag}</td>
+                </tr>`;
+        });
+    } else {
+        alert("❌ Error: " + data.error);
+    }
+}
+
+// CSRF helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

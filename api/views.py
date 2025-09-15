@@ -4,15 +4,16 @@ from rest_framework.response import Response
 from rest_framework import status
 import pandas as pd
 import requests
+from django.views.decorators.csrf import csrf_exempt
+
 import numpy as np
 from django.conf import settings
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.utils.timezone import now
 from geopy.distance import geodesic
-# FIXED: Change import paths to relative imports
 from .models import Courier, Order
 from .ml import model, encoders
-from .utils import normalize_columns, coerce_times, add_features, featurize_for_model, haversine_km, greedy_assign, clean_data
+from .utils import hybrid_anomaly_detection, normalize_columns, coerce_times, add_features, featurize_for_model, haversine_km, greedy_assign, clean_data
 
 
 
@@ -21,6 +22,8 @@ def dashboard(request):
     return render(request, "api/dashboard.html")
 def route_search_page(request):
     return render(request, "api/route_co2.html")
+def detect_anomalies_page(request):
+    return render(request, "api/detect_anomalies_page.html")
 
 # --- Utility Functions ---
 def parse_datetime_safe(dt_str):
@@ -100,7 +103,7 @@ def prepare_orders(orders):
     df = pd.DataFrame(prepared)
     return df
 
-
+@csrf_exempt
 @api_view(["POST"])
 def predict_eta(request):
     orders = request.data.get("orders", [])
@@ -404,3 +407,91 @@ def system_insights_page(request):
     }
 
     return render(request, "api/system_insights.html", context)
+
+# --- Anomaly Detection API ---
+@csrf_exempt
+@api_view(["POST"])
+def detect_anomalies(request):
+    try:
+        print("DEBUG request.data:", request.data)
+
+        orders = request.data.get("orders", [])
+        if not orders:
+            return Response(
+                {"success": False, "error": "⚠️ Hakuna maagizo yaliyotumwa"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Prepare orders
+        prepared_orders = []
+        for order in orders:
+            order_data = {
+                "order_id": order.get("order_id", ""),
+                "from_city_name": order.get("from_city_name", ""),
+                "poi_lat": float(order.get("poi_lat", 0)),
+                "poi_lng": float(order.get("poi_lng", 0)),
+                "receipt_lat": float(order.get("receipt_lat", 0)),
+                "receipt_lng": float(order.get("receipt_lng", 0)),
+                "typecode": order.get("typecode", ""),
+                "num_items": int(order.get("num_items", 1))
+            }
+            if order.get("receipt_time"):
+                order_data["receipt_time"] = order["receipt_time"]
+            if order.get("sign_time"):
+                order_data["sign_time"] = order["sign_time"]
+
+            prepared_orders.append(order_data)
+
+        df = pd.DataFrame(prepared_orders)
+        print("DEBUG raw DataFrame:", df.head())
+
+        if df.empty:
+            return Response(
+                {"success": False, "error": "❌ Data ya maagizo si sahihi"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Process
+        df = normalize_columns(df)
+        df = coerce_times(df)
+        df = add_features(df)
+        print("DEBUG with features:", df.head())
+
+        feature_cols = [
+            c for c in ["trip_km", "delivery_duration_min", "hour", "dow", "is_weekend", "speed_km_min"]
+            if c in df.columns
+        ]
+
+        if len(feature_cols) < 2:
+            return Response(
+                {"success": False, "error": "❌ Taarifa haitoshi kuchambua anomalies"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Run hybrid anomaly detection
+        df = hybrid_anomaly_detection(df, feature_cols)
+
+        anomalies = []
+        for _, row in df.iterrows():
+            anomaly_data = {
+                "order_id": str(row.get("order_id", "")),
+                "from_city": row.get("from_city_name", ""),
+                "trip_km": float(row.get("trip_km", 0)),
+                "duration_min": float(row.get("delivery_duration_min", 0)),
+                "anomaly": int(row.get("anomaly", 0)),
+                "anomaly_score": float(row.get("anomaly_score", 0)),
+                "flags": {
+                    "duration_flag": int(row.get("flag_duration", 0)),
+                    "items_flag": int(row.get("flag_items", 0)),
+                    "iforest_flag": int(row.get("flag_iforest", 0))
+                }
+            }
+            anomalies.append(anomaly_data)
+
+        return Response({"success": True, "anomalies": anomalies}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"success": False, "error": f"❌ Tatizo: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

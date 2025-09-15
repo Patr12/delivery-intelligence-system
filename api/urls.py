@@ -13,6 +13,11 @@ urlpatterns = [
     path('system-insights/', views.system_insights_page, name='system_insights_page'),
     path('predict-eta-page/', views.predict_eta_page, name='predict_eta_page'),  # HTML page
     path("route-search/", views.route_search_page, name="route_search"),
+     # API endpoint
+    path("api/detect_anomalies/", views.detect_anomalies, name="detect_anomalies_api"),
+
+    # HTML page
+    path("detect_anomalies/", views.detect_anomalies_page, name="detect_anomalies_page"),
 
     path('system-insights/', views.system_insights, name='system_insights'),
 ]
