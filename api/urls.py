@@ -1,9 +1,14 @@
 # api/urls.py
 from django.urls import path
 from . import views
+from .views import SignupView, LoginView, ProfileView
 
 urlpatterns = [
      path("", views.dashboard, name="dashboard"),
+    #  upande wa ku logout 
+     path('signup/', SignupView.as_view(), name='signup'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     path('predict-eta/', views.predict_eta, name='predict_eta'),
     path('predict-eta-smart/', views.predict_eta_smart, name='predict_eta_smart'),
     path('track-orders/', views.track_orders, name='track_orders'),

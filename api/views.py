@@ -16,6 +16,49 @@ from .ml import model, encoders
 from .utils import hybrid_anomaly_detection, normalize_columns, coerce_times, add_features, featurize_for_model, haversine_km, greedy_assign, clean_data
 from django.http import JsonResponse
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import UserSignupSerializer, UserLoginSerializer, UserProfileSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+
+# Signup API
+class SignupView(APIView):
+    def post(self, request):
+        serializer = UserSignupSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "user": UserProfileSerializer(user.userprofile).data,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# Login API
+class LoginView(APIView):
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "user": UserProfileSerializer(user.userprofile).data,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# Profile API
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = request.user.userprofile
+        serializer = UserProfileSerializer(profile)
+        return Response(serializer.data)
 
 
 # --- Dashboard ---
@@ -25,9 +68,20 @@ def dashboard(request):
 def route_search_page(request):
     return render(request, "api/route_co2.html")
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+
 
 def route_search(request):
     query = request.GET.get("q", "").lower().strip()
+    from_city, to_city = "", ""
+
+    if "|" in query:
+        from_city, to_city = query.split("|")
+        from_city = from_city.strip()
+        to_city = to_city.strip()
+    else:
+        from_city = query
 
     all_routes = [
         {"origin": "Dar es Salaam", "destination": "Moshi", "distance_km": 540},
@@ -38,10 +92,14 @@ def route_search(request):
 
     search_results = [
         route for route in all_routes
-        if query in route["origin"].lower() or query in route["destination"].lower()
+        if (from_city and from_city in route["origin"].lower())
+        and (to_city and to_city in route["destination"].lower() if to_city else True)
     ]
 
     return JsonResponse({"results": search_results})
+
+
+
 
 
 

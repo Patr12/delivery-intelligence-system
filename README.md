@@ -31,6 +31,8 @@ This system helps courier operators improve efficiency, reduce fraud, and make b
 ```bash
 git clone https://github.com/Patr12/delivery-intelligence-system.git
 cd delivery-intelligence-system
+for applictation git hub link ssh 
+https://github.com/Patr12/delivaX.git
 
 This starter kit helps you build an **AI-powered Delivery Intelligence** solution on top of `courier_dataset.csv` (~470k
 `REMEMBER IMPOTANTANT NOTE` * ***  kumbuka kuweka data set zote because file ni kubwa sana nime weka chache repositore ina shidwa kubeba zaidi ya GB1 KUENDELEA *** rows across five cities). It includes:

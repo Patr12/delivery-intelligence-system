@@ -3,6 +3,25 @@ from django.db import models
 # Create your models here.
 # models.py
 from django.db import models
+from django.db import models
+from django.contrib.auth.models import User
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=20, blank=True)
+    vehicle_type = models.CharField(max_length=50, choices=[
+        ('motorcycle', 'Motorcycle'),
+        ('car', 'Car'),
+        ('truck', 'Truck')
+    ], blank=True)
+    current_lat = models.FloatField(null=True, blank=True)
+    current_lng = models.FloatField(null=True, blank=True)
+    is_available = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.user.username
+
+
 
 class Courier(models.Model):
     name = models.CharField(max_length=100)
