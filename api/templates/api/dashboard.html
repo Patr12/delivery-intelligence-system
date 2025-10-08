@@ -329,8 +329,9 @@
 <body>
     <div class="container">
         <header>
-            <h1>Mfumo wa Utabiri wa Muda wa Kufikisha</h1>
-            <p class="subtitle">Panga na ufikirie muda wa kufikisha kwa usahihi zaidi</p>
+            <h1>Delivery Time Prediction System</h1>
+
+            <p class="subtitle">Plan and estimate delivery times more accurately</p>
         </header>
         
         <div class="dashboard">
@@ -338,18 +339,18 @@
                 <!-- Fomu ya Oda Moja -->
                 <div class="card">
                     <h2 class="card-title">
-                        <i>📦</i> Ongeza Oda Mpya
+                        <i>📦</i> Add New Order
                     </h2>
                     
                     <div class="form-group">
-                        <label for="order_id">Namba ya Oda</label>
+                        <label for="order_id">Order Number</label>
                         <input type="text" id="order_id" placeholder="OD12345">
                     </div>
                     
                     <div class="form-group">
-                        <label for="from_city_name">Jiji/Mji</label>
+                        <label for="from_city_name">City/Town</label>
                         <select id="from_city_name">
-                            <option value="">Chagua Jiji</option>
+                            <option value="">Select City</option>
                             <option value="Dar es Salaam">Dar es Salaam</option>
                             <option value="Mbeya">Mbeya</option>
                             <option value="Arusha">Arusha</option>
@@ -361,7 +362,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Eneo la Kuchukulia Bidhaa (POI)</label>
+                        <label>Pickup Location</label>
                         <div class="location-buttons">
                             <div class="location-btn active" data-lat="-6.823" data-lng="39.269" data-city="Dar es Salaam">Dar es Salaam</div>
                             <div class="location-btn" data-lat="-8.909" data-lng="33.456" data-city="Mbeya">Mbeya</div>
@@ -374,12 +375,12 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="receipt_time">Muda wa Kupokea</label>
+                        <label for="receipt_time">Pickup Time</label>
                         <input type="datetime-local" id="receipt_time">
                     </div>
                     
                     <div class="form-group">
-                        <label>Eneo la Kufikia (Receipt)</label>
+                        <label>Delivery Location (Receipt)</label>
                         <div class="location-buttons">
                             <div class="location-btn active" data-lat="-6.800" data-lng="39.283" data-city="Dar es Salaam">Dar es Salaam</div>
                             <div class="location-btn" data-lat="-8.900" data-lng="33.450" data-city="Mbeya">Mbeya</div>
@@ -390,38 +391,38 @@
                     </div>
                     <!-- Fomu ya Oda Moja - Maboresho kwa Optional Fields -->
 <div class="form-group">
-    <label for="sign_time">Muda wa Sahihi (Optional)</label>
+    <label for="sign_time">Sign Time  (Optional)</label>
     <input type="datetime-local" id="sign_time">
 </div>
 
 <div class="form-group">
     <label for="typecode">Typecode (Optional)</label>
-    <input type="text" id="typecode" placeholder="Tumia ikiwa inapatikana">
+    <input type="text" id="typecode" placeholder="Use if available">
 </div>
 
-<div class="form-group">
+<!-- <div class="form-group">
     <label for="aoi_id">AOI ID (Optional)</label>
-    <input type="text" id="aoi_id" placeholder="Tumia ikiwa inapatikana">
-</div>
+    <input type="text" id="aoi_id" placeholder="Use if available">
+</div> -->
 
                     
                     <div class="distance-info" id="distanceInfo">
-                        Umbali: 0 km
+                        distance: 0 km
                     </div>
                     
                     <button class="btn" onclick="submitSingleOrder()">
-                        <i>⚡</i> Tabiri Muda wa Kufikisha
+                        <i>⚡</i> Predict Delivery Time
                     </button>
                     
                     <div id="singleOrderResult" class="result-box" style="display: none;">
-                        <div class="result-title">Matokeo ya Utabiri:</div>
+                        <div class="result-title">Prediction Results:div>
                         <div class="eta-value" id="etaValue">-</div>
-                        <p id="etaDetails">Muda unaotabiriwa kufikisha oda hii</p>
+                        <p id="etaDetails">Predicted time to complete this delivery</p>
                     </div>
                 </div>
                 
                 <!-- Oda Nyingi -->
-                <div class="card">
+                <!-- <div class="card">
                     <h2 class="card-title">
                         <i>📋</i> Oda Nyingi
                     </h2>
@@ -459,23 +460,23 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            </div> -->
             
             <div class="right-column">
                 <!-- Taarifa za Mfumo -->
                 <div class="card">
                     <h2 class="card-title">
-                        <i>📊</i> Taarifa za Mfumo
+                        <i>📊</i> System Insights
                     </h2>
                     
                     <div class="stats-grid">
                         <div class="stat-box">
                             <div class="stat-value" id="totalOrders">0</div>
-                            <div class="stat-label">Oda Leo</div>
+                            <div class="stat-label">Orders Today</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-value" id="avgEta">0</div>
-                            <div class="stat-label">Muda wa Wastani</div>
+                            <div class="stat-label">Average Time</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-value" id="co2Emissions">0</div>
@@ -483,33 +484,34 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-value" id="bestCourier">-</div>
-                            <div class="stat-label">Mwendo Bora</div>
+                            <div class="stat-label">Top Courier</div>
                         </div>
                     </div>
                     
                     <button class="btn btn-secondary" onclick="loadSystemInsights()">
-                        <i>🔄</i> Pakua Taarifa Mpya
+                        <i>🔄</i> Refresh Insights
                     </button>
                 </div>
                 
                 <!-- Wafanyikazi Bora -->
                 <div class="card">
                     <h2 class="card-title">
-                        <i>🏆</i> Wafanyikazi Bora
+                        <i>🏆</i> Best Performing Couriers
                     </h2>
                     
                     <button class="btn" onclick="loadCourierPerformance()">
-                        <i>👤</i> Orodha ya Wafanyikazi
+                        <i>👤</i> View Courier List
                     </button>
                     
                     <div id="courierResults" style="display: none;">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Jina</th>
-                                    <th>Aina ya Gari</th>
-                                    <th>Oda</th>
-                                    <th>Muda (dakika)</th>
+                                    <th>Name</th>
+                                    <th>Vehicle Type</th>
+                                    <th>Orders</th>
+                                    <th>Time (minutes)</th>
+
                                 </tr>
                             </thead>
                             <tbody id="courierResultsBody">
@@ -521,28 +523,29 @@
                 <!-- Msaada na Maelekezo -->
                 <div class="card">
                     <h2 class="card-title">
-                        <i>❓</i> Maelekezo ya Matumizi
+                        <i>❓</i> Help & Instructions
                     </h2>
                     
                     <div class="tab-container">
                         <div class="tabs">
-                            <div class="tab active" data-tab="basic">Maelezo ya Msingi</div>
-                            <div class="tab" data-tab="locations">Maeneo</div>
-                            <div class="tab" data-tab="troubleshooting">Matatizo</div>
+                            <div class="tab active" data-tab="basic">Basic Guide</div>
+                            <div class="tab" data-tab="locations">locations</div>
+                            <div class="tab" data-tab="troubleshooting">troubleshooting</div>
                         </div>
                         
                         <div class="tab-content active" id="basic-tab">
-                            <p><strong>Jinsi ya kutumia:</strong></p>
+                            <p><strong>How to use:</strong></p>
                             <ul style="padding-left: 20px; margin-top: 10px;">
-                                <li>Jaza fomu ya kushoto kwa taarifa za oda</li>
-                                <li>Bofya kituo cha "Tabiri Muda wa Kufikisha"</li>
-                                <li>Angalia matokeo kwenye sehemu ya matokeo</li>
-                                <li>Kwa oda nyingi, tumia sehemu ya chini</li>
+                               <li>Fill in the form on the left with order details</li>
+                                <li>Click “Predict Delivery Time”</li>
+                                <li>Check the results section for predictions</li>
+                                <li>Use the lower section for multiple orders</li>
+
                             </ul>
                         </div>
                         
                         <div class="tab-content" id="locations-tab">
-                            <p><strong>Viwango vya anwani za kawaida:</strong></p>
+                            <p><strong>Common Address Coordinates:</strong></p>
                             <ul style="padding-left: 20px; margin-top: 10px;">
                                 <li><strong>Dar es Salaam:</strong> Lat: -6.823, Lng: 39.269</li>
                                 <li><strong>Mbeya:</strong> Lat: -8.909, Lng: 33.456</li>
@@ -552,11 +555,12 @@
                         </div>
                         
                         <div class="tab-content" id="troubleshooting-tab">
-                            <p><strong>Matatizo Yanayowezekana:</strong></p>
+                            <p><strong>Possible Issues:strong></p>
                             <ul style="padding-left: 20px; margin-top: 10px;">
-                                <li>Hakikisha umeweka anwani zote za kijiografia</li>
-                                <li>Thibitisha kuwa data yako ina safu ya <code>trip_km</code></li>
-                                <li>Rudi nyuma na uhakikishe data yako iko sawa</li>
+                                <li>Ensure all geographic coordinates are entered</li>
+                                <li>Confirm your data includes a <code>trip_km</code> field</li>
+                                <li>Double-check that your data format is correct</li>
+
                             </ul>
                         </div>
                     </div>
@@ -565,7 +569,7 @@
         </div>
         
         <footer>
-            <p>Mfumo wa Utabiri wa Muda wa Kufikisha &copy; 2023</p>
+            <p>Delivery Time Prediction System &copy; 2023</p>
         </footer>
     </div>
 
@@ -595,63 +599,63 @@
             
             if (!isNaN(poiLat) && !isNaN(poiLng) && !isNaN(receiptLat) && !isNaN(receiptLng)) {
                 const distance = calculateDistance(poiLat, poiLng, receiptLat, receiptLng);
-                document.getElementById('distanceInfo').textContent = `Umbali: ${distance.toFixed(2)} km`;
+                document.getElementById('distanceInfo').textContent = `Distance: ${distance.toFixed(2)} km`;
             }
         }
         
-        // Location buttons functionality for POI
-        document.querySelectorAll('.card:first-child .location-buttons:first-child .location-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.card:first-child .location-buttons:first-child .location-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                const lat = this.getAttribute('data-lat');
-                const lng = this.getAttribute('data-lng');
-                document.getElementById('poi_lat').value = lat;
-                document.getElementById('poi_lng').value = lng;
-                updateDistance();
-            });
-        });
+    // Location buttons functionality for POI
+document.querySelectorAll('.card:first-child .location-buttons:first-child .location-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.card:first-child .location-buttons:first-child .location-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
         
-        // Location buttons functionality for Receipt
-        document.querySelectorAll('.card:first-child .location-buttons:nth-child(5) .location-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.card:first-child .location-buttons:nth-child(5) .location-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                const lat = this.getAttribute('data-lat');
-                const lng = this.getAttribute('data-lng');
-                document.getElementById('receipt_lat').value = lat;
-                document.getElementById('receipt_lng').value = lng;
-                updateDistance();
-            });
-        });
-        
-        // Update distance when coordinates are manually changed
-        document.getElementById('poi_lat').addEventListener('input', updateDistance);
-        document.getElementById('poi_lng').addEventListener('input', updateDistance);
-        document.getElementById('receipt_lat').addEventListener('input', updateDistance);
-        document.getElementById('receipt_lng').addEventListener('input', updateDistance);
-        
-        // Initialize distance calculation
+        const lat = this.getAttribute('data-lat');
+        const lng = this.getAttribute('data-lng');
+        document.getElementById('poi_lat').value = lat;
+        document.getElementById('poi_lng').value = lng;
         updateDistance();
+    });
+});
+
+// Location buttons functionality for Receipt
+document.querySelectorAll('.card:first-child .location-buttons:nth-child(5) .location-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.card:first-child .location-buttons:nth-child(5) .location-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
         
-        // Tab functionality
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabName = this.getAttribute('data-tab');
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                
-                this.classList.add('active');
-                document.getElementById(`${tabName}-tab`).classList.add('active');
-            });
-        });
+        const lat = this.getAttribute('data-lat');
+        const lng = this.getAttribute('data-lng');
+        document.getElementById('receipt_lat').value = lat;
+        document.getElementById('receipt_lng').value = lng;
+        updateDistance();
+    });
+});
+
+// Update distance when coordinates are manually changed
+document.getElementById('poi_lat').addEventListener('input', updateDistance);
+document.getElementById('poi_lng').addEventListener('input', updateDistance);
+document.getElementById('receipt_lat').addEventListener('input', updateDistance);
+document.getElementById('receipt_lng').addEventListener('input', updateDistance);
+
+// Initialize distance calculation
+updateDistance();
+
+// Tab functionality
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        const tabName = this.getAttribute('data-tab');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
-       async function submitSingleOrder() {
+        this.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    });
+});
+
+async function submitSingleOrder() {
     const receiptTime = document.getElementById('receipt_time').value;
     if (!receiptTime) {
-        alert('Tafadhali weka muda wa kupokea');
+        alert('Please enter the pickup time.');
         return;
     }
 
@@ -661,7 +665,7 @@
     const receiptLng = parseFloat(document.getElementById('receipt_lng').value);
     
     if (isNaN(poiLat) || isNaN(poiLng) || isNaN(receiptLat) || isNaN(receiptLng)) {
-        alert('Tafadhali hakiki anwani zako za kijiografia');
+        alert('Please verify your geographic coordinates.');
         return;
     }
 
@@ -688,7 +692,7 @@
 
     const resultDiv = document.getElementById('singleOrderResult');
     resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '<div class="loading"></div> Inatafuta...';
+    resultDiv.innerHTML = '<div class="loading"></div> Searching...';
 
     try {
         const res = await fetch('/predict-eta/', {
@@ -701,54 +705,55 @@
         if(data.success) {
             const p = data.predictions[0];
             let message = "";
-            if (p.eta_minutes < 30) message = "✅ Muda mfupi sana! Oda itafika haraka.";
-            else if (p.eta_minutes < 60) message = "⏱️ Muda wa kawaida. Oda itafika kwa kiasi cha saa moja.";
-            else message = "⚠️ Muda mrefu. Inashauriwa kutumia njia mbadala.";
+            if (p.eta_minutes < 30) message = "✅ Very short time! The order will arrive quickly.";
+            else if (p.eta_minutes < 60) message = "⏱️ Normal time. The order will arrive in about an hour.";
+            else message = "⚠️ Long delivery time. It’s recommended to consider an alternative route.";
 
             resultDiv.innerHTML = `
-                <div class="result-title">Matokeo ya Utabiri:</div>
-                <div class="eta-value">${p.eta_minutes.toFixed(1)} dakika</div>
+                <div class="result-title">Prediction Result:</div>
+                <div class="eta-value">${p.eta_minutes.toFixed(1)} minutes</div>
                 <p>${message}</p>
-                <p>Umbali: ${distance.toFixed(2)} km</p>
+                <p>Distance: ${distance.toFixed(2)} km</p>
             `;
         } else {
             resultDiv.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
         }
     } catch (error) {
-        resultDiv.innerHTML = `<div class="alert alert-error">Hitilafu ya mtandao: ${error.message}</div>`;
+        resultDiv.innerHTML = `<div class="alert alert-error">Network error: ${error.message}</div>`;
     }
 }
 
+async function predictMultipleOrders() {
+    const ordersInput = document.getElementById('ordersInput').value;
+    if (!ordersInput) {
+        alert('Please enter JSON orders.');
+        return;
+    }
+    
+    let orders;
+    try {
+        orders = JSON.parse(ordersInput);
         
-        async function predictMultipleOrders() {
-            const ordersInput = document.getElementById('ordersInput').value;
-            if (!ordersInput) {
-                alert('Tafadhali weka oda za JSON');
-                return;
+        // Add trip_km to each order if not present
+        orders = orders.map(order => {
+            if (!order.trip_km && order.poi_lat && order.poi_lng && order.receipt_lat && order.receipt_lng) {
+                order.trip_km = calculateDistance(
+                    order.poi_lat, order.poi_lng, 
+                    order.receipt_lat, order.receipt_lng
+                );
             }
-            
-            let orders;
-            try {
-                orders = JSON.parse(ordersInput);
-                
-                // Add trip_km to each order if not present
-                orders = orders.map(order => {
-                    if (!order.trip_km && order.poi_lat && order.poi_lng && order.receipt_lat && order.receipt_lng) {
-                        order.trip_km = calculateDistance(
-                            order.poi_lat, order.poi_lng, 
-                            order.receipt_lat, order.receipt_lng
-                        );
-                    }
-                    return order;
-                });
-            } catch (e) {
-                alert('Umeweka oda zisizo sahihi. Tafadhali hakiki tena');
-                return;
-            }
+            return order;
+        });
+    } catch (e) {
+        alert('Invalid order format. Please check your JSON data.');
+        return;
+    }
+
+
             
             const resultsDiv = document.getElementById('etaResults');
             resultsDiv.style.display = 'block';
-            document.getElementById('etaResultsBody').innerHTML = '<tr><td colspan="2"><div class="loading"></div> Inatafuta...</td></tr>';
+            document.getElementById('etaResultsBody').innerHTML = '<tr><td colspan="2"><div class="loading"></div> Searching...</td></tr>';
             
             try {
                 const res = await fetch('/predict-eta/', {
@@ -768,7 +773,7 @@
                     document.getElementById('etaResultsBody').innerHTML = `<tr><td colspan="2">${data.error}</td></tr>`;
                 }
             } catch (error) {
-                document.getElementById('etaResultsBody').innerHTML = `<tr><td colspan="2">Hitilafu ya mtandao: ${error.message}</td></tr>`;
+                document.getElementById('etaResultsBody').innerHTML = `<tr><td colspan="2">Issue of Server: ${error.message}</td></tr>`;
             }
         }
         

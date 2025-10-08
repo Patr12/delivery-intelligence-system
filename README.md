@@ -19,7 +19,7 @@ Our solution is an **AI-powered Delivery Intelligence System** that integrates p
 - A **Machine Learning model** (LightGBM) trained on cleaned and feature-engineered data to **predict Estimated Delivery Time (ETA)**.  
 - **Anomaly Detection** using a hybrid approach (rule-based + Isolation Forest) to flag suspicious deliveries that may indicate fraud or operational issues.  
 - An **interactive dashboard** (Streamlit) to visualize predicted vs actual delivery times, courier performance, city-level insights, and anomaly alerts.  
-- A **FastAPI microservice** exposing `/predict_eta` and `/detect_anomaly` endpoints for integration with external systems.  
+- A **RestAPI ** exposing `/predict_eta` and `/detect_anomaly` endpoints for integration with external systems.  
 
 This system helps courier operators improve efficiency, reduce fraud, and make better operational decisions.  
 
@@ -37,8 +37,8 @@ This starter kit helps you build an **AI-powered Delivery Intelligence** solutio
 - ETA prediction (regression) + **SLA risk scoring**
 - **Courier assignment** (greedy cost-based) with plug-in for route optimization
 - **Anomaly detection** (simple rules + isolation forest toggle)
-- **City/zone heatmaps** + ops analytics (in notebook)
-- A small **FastAPI** app exposing `/predict_eta`, `/assign_courier`, `/anomaly_check`, `/metrics/coverage`
+- **City/zone heatmaps** + ops analytics (in python editor)
+- A small **REST-API** app exposing `/predict_eta`, `/assign_courier`, `/anomaly_check`, `/metrics/coverage`
 
 > Place `courier_dataset.csv` at the project root or update the path in code.
 

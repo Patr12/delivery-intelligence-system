@@ -1,17 +1,53 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="sw">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}System Insights{% endblock %}</title>
+    <link rel="shortcut icon" href="{% static 'images/logonew.ico' %}" type="image/x-icon">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
     <style>
-        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
-        nav { background:#2563eb; color:white; padding:1rem; display:flex; justify-content:space-between; align-items:center; }
-        nav a { color:white; margin-right:1rem; text-decoration:none; font-weight:bold; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin:0; 
+            padding:0; 
+            background:#f4f4f4; 
+            min-height:100vh; 
+            display:flex; 
+            flex-direction:column;
+        }
+        nav { 
+            background:#2563eb; 
+            color:white; 
+            padding:1rem; 
+            display:flex; 
+            justify-content:space-between; 
+            align-items:center; 
+        }
+        nav a { 
+            color:white; 
+            margin-right:1rem; 
+            text-decoration:none; 
+            font-weight:bold; 
+        }
         nav a:hover { text-decoration:underline; }
-        main { padding:2rem; }
-        footer { background:#1e40af; color:white; text-align:center; padding:1rem; position:fixed; bottom:0; width:100%; }
-        .card { background:white; padding:1rem; margin-bottom:1rem; border-radius:0.5rem; box-shadow:0 0 5px rgba(0,0,0,0.1); }
+        main { flex:1; padding:2rem; }
+        footer { 
+            background:#1e40af; 
+            color:white; 
+            text-align:center; 
+            padding:1.5rem 1rem; 
+        }
+        .footer-links a { 
+            color:#fbbf24; 
+            margin:0 10px; 
+            text-decoration:none; 
+        }
+        .footer-links a:hover { text-decoration:underline; }
     </style>
 </head>
 <body>
@@ -19,20 +55,24 @@
         <div class="nav-left">
             <a href="{% url 'dashboard' %}">Dashboard</a>
             <a href="{% url 'predict_eta_page' %}">Predict ETA</a>
-            <a href="{% url 'route_search' %}">Route Co2</a>
+            <a href="{% url 'route_search' %}">Route CO₂</a>
             <a href="{% url 'detect_anomalies_page' %}">Detect Anomaly</a>
-
             <a href="{% url 'system_insights_page' %}">System Insights</a>
         </div>
         <div class="nav-right">
-            User: Admin
         </div>
     </nav>
     <main>
         {% block content %} {% endblock %}
     </main>
     <footer>
-        &copy; 2025 System Insights
+        <p>&copy; 2025 Digital Club Hackathon | System Insights</p>
+        <div class="footer-links">
+            <a href="#">About</a> |
+            <a href="#">Contact</a> |
+            <a href="#">Privacy Policy</a>
+        </div>
+        <p>Extended to 10th September 2025 - Welcome to join!</p>
     </footer>
 </body>
 </html>

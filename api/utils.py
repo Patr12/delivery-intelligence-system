@@ -8,6 +8,11 @@ from scipy.sparse import csr_matrix
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 import gc
+def safe_int_column(series, fill_value=0):
+    """Safely convert Series to integer, replacing NaN/inf"""
+    series = series.replace([np.inf, -np.inf], fill_value)
+    series = series.fillna(fill_value)
+    return series.astype(int)
 
 # --- Haversine distance (optimized) ---
 def haversine_km(lat1, lon1, lat2, lon2):

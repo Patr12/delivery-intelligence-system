@@ -12,10 +12,11 @@
     <input type="text" id="order_ids" placeholder="Enter order IDs, comma separated" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; margin-bottom:10px;">
     <button type="button" onclick="trackOrders()" style="width:100%; padding:10px; border:none; border-radius:6px; background:#2563eb; color:white; font-weight:bold; cursor:pointer; transition:0.2s;">Track 📍</button>
     <div id="trackingResults" style="margin-top:15px;"></div>
+    <div id="map" style="height:400px; width:100%; margin-top:15px;"></div>
   </div>
 
   <!-- CO₂ Calculator Card -->
-  <div style="background:#fef6f6; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:400px;">
+  <div style="background:#fef6f6; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:500px;">
     <h2 style="color:#dc2626;">2️⃣ Calculate CO₂ & Optimized Route</h2>
 
     <div id="ordersContainer"></div>
@@ -29,33 +30,76 @@
 
 </div>
 
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
-// --- Dynamic Orders Table ---
-function addOrderRow(order_id="", trip_km="") {
+// ================= Dynamic Orders Table =================
+function addOrderRow(order_id="", trip_km="", courier_type="motorbike", load_kg="") {
     const container = document.getElementById("ordersContainer");
     const div = document.createElement("div");
     div.className = "orderRow";
     div.style.display = "flex";
+    div.style.flexWrap = "wrap";
     div.style.gap = "10px";
     div.style.marginTop = "8px";
     div.innerHTML = `
         <input type="text" class="order_id" placeholder="Order ID" value="${order_id}" style="flex:1; padding:6px; border-radius:6px; border:1px solid #ccc;">
-        <input type="number" class="trip_km" placeholder="Distance km" value="${trip_km}" style="width:80px; padding:6px; border-radius:6px; border:1px solid #ccc;">
+        <input type="number" class="trip_km" placeholder="Distance km" value="${trip_km}" style="width:90px; padding:6px; border-radius:6px; border:1px solid #ccc;">
+        <select class="courier_type" style="padding:6px; border-radius:6px; border:1px solid #ccc;">
+            <option value="motorbike" ${courier_type==="motorbike"?"selected":""}>Motorbike</option>
+            <option value="car" ${courier_type==="car"?"selected":""}>Car</option>
+            <option value="van" ${courier_type==="van"?"selected":""}>Van</option>
+            <option value="truck" ${courier_type==="truck"?"selected":""}>Truck</option>
+            <option value="bicycle" ${courier_type==="bicycle"?"selected":""}>Bicycle</option>
+            <option value="electric" ${courier_type==="electric"?"selected":""}>Electric</option>
+        </select>
+        <input type="number" class="load_kg" placeholder="Load kg" value="${load_kg}" style="width:90px; padding:6px; border-radius:6px; border:1px solid #ccc;">
         <button type="button" onclick="this.parentElement.remove()" style="padding:6px 10px; border:none; border-radius:6px; background:#ef4444; color:white; cursor:pointer;">❌</button>
     `;
     container.appendChild(div);
 }
+addOrderRow(); // initial row
 
-// Add initial row
-addOrderRow();
+// ================= Leaflet Map Setup =================
+const mapEl = document.getElementById("map");
+const map = L.map(mapEl).setView([-3.3869, 36.6830], 13);
 
-// --- Track Orders ---
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let markers = {};
+function updateMapMarkers(locations) {
+    const bounds = [];
+    locations.forEach(loc=>{
+        const latlng = [loc.lat, loc.lng];
+        if(markers[loc.order_id]){
+            markers[loc.order_id].setLatLng(latlng);
+            markers[loc.order_id].setPopupContent(`Order ${loc.order_id}: ${loc.progress}% completed`);
+        } else {
+            markers[loc.order_id] = L.marker(latlng)
+                .addTo(map)
+                .bindPopup(`Order ${loc.order_id}: ${loc.progress}% completed`);
+        }
+        bounds.push(latlng);
+    });
+    if(bounds.length>0){
+        map.fitBounds(bounds, {padding: [50,50]});
+    }
+}
+
+// ================= Track Orders =================
 function trackOrders() {
     const order_ids = document.getElementById("order_ids").value
         .split(",").map(id=>id.trim()).filter(id=>id.length>0);
-    if(order_ids.length==0){ alert("Enter at least one order ID"); return; }
+    if(order_ids.length==0){
+        alert("Enter at least one order ID");
+        return; 
+    }
 
-    fetch("/track-orders/?"+new URLSearchParams({"order_ids": order_ids}),{method:'GET'})
+    fetch("/track-orders/?"+new URLSearchParams({"order_ids": order_ids}), {method:'GET'})
     .then(res=>res.json())
     .then(data=>{
         const container = document.getElementById("trackingResults");
@@ -67,27 +111,30 @@ function trackOrders() {
             });
             html+="</ul>";
             container.innerHTML=html;
+            updateMapMarkers(data.locations);
         }else{
             container.innerHTML="<div style='background:#fee;padding:10px; border-radius:6px;'>Error: "+data.error+"</div>";
         }
     }).catch(err=>alert("Error tracking orders"));
 }
+setInterval(trackOrders, 50000);
 
-// --- CO2 + Optimized Route ---
+// ================= CO2 + Optimized Route =================
 function calculateCO2() {
     const rows = document.querySelectorAll(".orderRow");
     const orders = [];
     rows.forEach(r=>{
         const order_id = r.querySelector(".order_id").value.trim();
         const trip_km = parseFloat(r.querySelector(".trip_km").value);
+        const courier_type = r.querySelector(".courier_type").value;
+        const load_kg = parseFloat(r.querySelector(".load_kg").value) || 0;
         if(order_id && !isNaN(trip_km)){
-            orders.push({order_id, trip_km});
+            orders.push({order_id, trip_km, courier_type, load_kg});
         }
     });
 
     if(orders.length==0){ alert("Add at least one order with distance"); return; }
 
-    // Carbon footprint
     fetch("/carbon-footprint/", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -98,32 +145,18 @@ function calculateCO2() {
         const container = document.getElementById("co2Results");
         container.innerHTML="";
         if(data.success){
-            let html="<h3 style='color:#dc2626;'>CO₂ Emissions</h3><ul>";
+            let html="<h3 style='color:#dc2626;'>CO₂ Emissions</h3><table border='1' style='border-collapse:collapse; width:100%;'><tr><th>Order</th><th>Courier</th><th>Distance (km)</th><th>Load (kg)</th><th>CO₂ (kg)</th></tr>";
             data.emissions.forEach(e=>{
-                html+=`<li>Order ${e.order_id}: ${e.co2_emission_kg} kg CO₂</li>`;
+                html+=`<tr>
+                    <td>${e.order_id}</td>
+                    <td>${e.courier_type}</td>
+                    <td>${e.trip_km}</td>
+                    <td>${e.load_kg}</td>
+                    <td><b style="color:#dc2626;">${e.co2_emission_kg}</b></td>
+                </tr>`;
             });
-            html+="</ul>";
-
-            // Optimized route
-            fetch("/optimize-route/", {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body: JSON.stringify({orders, couriers:[{courier_id:"c1", name:"Courier 1"}]})
-            })
-            .then(res=>res.json())
-            .then(routeData=>{
-                if(routeData.success){
-                    html+="<h3 style='color:#2563eb;'>Optimized Route</h3><ol>";
-                    routeData.assignments.forEach(a=>{
-                        html+=`<li>Order ${a.order_id} assigned to ${a.courier_id}</li>`;
-                    });
-                    html+="</ol>";
-                } else {
-                    html+="<div style='background:#fee;padding:10px; border-radius:6px;'>Error: "+routeData.error+"</div>";
-                }
-                container.innerHTML=html;
-            }).catch(err=>alert("Error optimizing route"));
-
+            html+="</table>";
+            container.innerHTML=html;
         } else {
             container.innerHTML="<div style='background:#fee;padding:10px; border-radius:6px;'>Error: "+data.error+"</div>";
         }

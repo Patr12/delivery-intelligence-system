@@ -1,143 +1,256 @@
 {% extends "api/base.html" %}
-{% block title %}Predict ETA & Track Orders{% endblock %}
+{% block title %}Predict ETA & Track Orders (Fill Orders){% endblock %}
 
 {% block content %}
-<h1 style="color:#2563eb;">🚚 Predict ETA & Track Orders</h1>
+<h1 style="color:#2563eb;">🚚 Enter Orders — Predict ETA & Track (ML)</h1>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
-{% if error %}
-    <div style="background:#fee2e2;color:#b91c1c;padding:12px;border-radius:8px;margin-bottom:15px;">
-        ⚠️ Error: {{ error }}
-    </div>
-{% endif %}
+<p>Jaza rows hapa chini kisha bonyeza <strong>Predict ETA</strong> au <strong>Predict & Track (ML)</strong>.</p>
 
-<form method="POST" id="etaForm">
-    {% csrf_token %}
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Order ID</th>
-                <th>From City</th>
-                <th>POI Lat</th>
-                <th>POI Lng</th>
-                <th>Receipt Lat</th>
-                <th>Receipt Lng</th>
-                <th>Typecode</th>
-            </tr>
-        </thead>
-        <tbody id="ordersTable">
-            {% for i in orders %}
-            <tr>
-                <td><input type="text" name="order_id" value="{{ i.order_id }}" placeholder="e.g. A123"></td>
-                <td><input type="text" name="from_city_name" value="{{ i.from_city_name }}" placeholder="Mbeya"></td>
-                <td><input type="number" step="any" name="poi_lat" value="{{ i.poi_lat }}" placeholder="-6.162"></td>
-                <td><input type="number" step="any" name="poi_lng" value="{{ i.poi_lng }}" placeholder="35.752"></td>
-                <td><input type="number" step="any" name="receipt_lat" value="{{ i.receipt_lat }}" placeholder="-7.123"></td>
-                <td><input type="number" step="any" name="receipt_lng" value="{{ i.receipt_lng }}" placeholder="36.809"></td>
-                <td><input type="text" name="typecode" value="{{ i.typecode }}" placeholder="98765"></td>
-            </tr>
-            {% endfor %}
-            {% if orders|length == 0 %}
-            <tr>
-                <td><input type="text" name="order_id" placeholder="e.g. A123"></td>
-                <td><input type="text" name="from_city_name" placeholder="Mbeya"></td>
-                <td><input type="number" step="any" name="poi_lat" placeholder="-6.162"></td>
-                <td><input type="number" step="any" name="poi_lng" placeholder="35.752"></td>
-                <td><input type="number" step="any" name="receipt_lat" placeholder="-7.123"></td>
-                <td><input type="number" step="any" name="receipt_lng" placeholder="36.809"></td>
-                <td><input type="text" name="typecode" placeholder="98765"></td>
-            </tr>
-            {% endif %}
-        </tbody>
-    </table>
-    <br>
-    <button type="button" onclick="addRow()">➕ Add Another Order</button>
-    <button type="submit" style="background:#2563eb;color:#fff;padding:8px 15px;border:none;border-radius:6px;">
-        Predict ETA
-    </button>
+<!-- Orders table -->
+<table id="ordersTable" class="styled-table" style="margin-bottom:12px;">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Order ID</th>
+      <th>From City</th>
+      <th>POI Lat</th>
+      <th>POI Lng</th>
+      <th>Receipt Lat</th>
+      <th>Receipt Lng</th>
+      <th>Receipt Time</th>
+      <th>Sign Lat</th>
+      <th>Sign Lng</th>
+      <th>Typecode</th>
+      <th>Trip km</th>
+      <th>Num Items</th>
+    </tr>
+  </thead>
+  <tbody id="ordersBody">
+    <tr>
+      <td><button type="button" class="removeRowBtn" onclick="this.closest('tr').remove()">−</button></td>
+      <td><input name="order_id" placeholder="A123" /></td>
+      <td><input name="from_city_name" placeholder="Dar es Salaam" /></td>
+      <td><input name="poi_lat" type="number" step="any" placeholder="-6.162" /></td>
+      <td><input name="poi_lng" type="number" step="any" placeholder="39.207" /></td>
+      <td><input name="receipt_lat" type="number" step="any" placeholder="-6.200" /></td>
+      <td><input name="receipt_lng" type="number" step="any" placeholder="39.220" /></td>
+      <td><input name="receipt_time" type="datetime-local" /></td>
+      <td><input name="sign_lat" type="number" step="any" /></td>
+      <td><input name="sign_lng" type="number" step="any" /></td>
+      <td><input name="typecode" placeholder="4602" /></td>
+      <td><input name="trip_km" type="number" step="any" placeholder="12.5" /></td>
+      <td><input name="num_items" type="number" step="1" placeholder="1" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<button type="button" onclick="addRow()">➕ Add row</button>
+<button type="button" onclick="predictEta()" style="background:#2563eb;color:#fff;padding:6px 12px;margin-left:8px;border-radius:6px;border:none;">Predict ETA</button>
+<button type="button" onclick="predictAndTrack()" style="background:#059669;color:#fff;padding:6px 12px;margin-left:8px;border-radius:6px;border:none;">Predict & Track (ML)</button>
+
+<hr style="margin:18px 0;" />
+
+<h3>Track Single Order</h3>
+<form id="trackForm">
+  <input type="text" id="order_id" placeholder="Enter Order ID" style="padding:6px;width:200px;">
+  <button type="submit" style="background:#f59e0b;color:white;padding:6px 12px;border:none;border-radius:6px;">Track Order</button>
 </form>
 
-{% if predictions %}
-<h2 style="margin-top:30px;">📊 ETA Predictions</h2>
-<table class="styled-table">
-    <thead>
-        <tr>
-            <th>Order ID</th>
-            <th>ETA (minutes)</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for p in predictions %}
-        <tr>
-            <td>{{ p.order_id }}</td>
-            <td>{{ p.eta_minutes|floatformat:2 }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endif %}
+<hr style="margin:18px 0;" />
 
-<hr>
-<h2>📍 Track Orders</h2>
-<input type="text" id="order_ids" placeholder="Enter order IDs, comma separated">
-<button type="button" onclick="trackOrders()">Track</button>
+<h3>Results</h3>
+<div id="results"></div>
 
-<div id="trackingResults" style="margin-top:15px;"></div>
+<h3>Map</h3>
+<div id="map" style="height:400px;"></div>
 
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
+// CSRF helper
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i=0;i<cookies.length;i++){
+      const c = cookies[i].trim();
+      if (c.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(c.substring(name.length+1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Add row to table
 function addRow() {
-    const table = document.getElementById("ordersTable");
-    const row = document.createElement("tr");
-    row.innerHTML = `
-        <td><input type="text" name="order_id" placeholder="e.g. A123"></td>
-        <td><input type="text" name="from_city_name" placeholder="Mbeya"></td>
-        <td><input type="number" step="any" name="poi_lat" placeholder="-6.162"></td>
-        <td><input type="number" step="any" name="poi_lng" placeholder="35.752"></td>
-        <td><input type="number" step="any" name="receipt_lat" placeholder="-7.123"></td>
-        <td><input type="number" step="any" name="receipt_lng" placeholder="36.809"></td>
-        <td><input type="text" name="typecode" placeholder="98765"></td>
-    `;
-    table.appendChild(row);
+  const tbody = document.getElementById('ordersBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><button type="button" class="removeRowBtn" onclick="this.closest('tr').remove()">−</button></td>
+    <td><input name="order_id" placeholder="A123" /></td>
+    <td><input name="from_city_name" placeholder="Dar es Salaam" /></td>
+    <td><input name="poi_lat" type="number" step="any" placeholder="-6.162" /></td>
+    <td><input name="poi_lng" type="number" step="any" placeholder="39.207" /></td>
+    <td><input name="receipt_lat" type="number" step="any" placeholder="-6.200" /></td>
+    <td><input name="receipt_lng" type="number" step="any" placeholder="39.220" /></td>
+    <td><input name="receipt_time" type="datetime-local" /></td>
+    <td><input name="sign_lat" type="number" step="any" /></td>
+    <td><input name="sign_lng" type="number" step="any" /></td>
+    <td><input name="typecode" placeholder="4602" /></td>
+    <td><input name="trip_km" type="number" step="any" placeholder="12.5" /></td>
+    <td><input name="num_items" type="number" step="1" placeholder="1" /></td>
+  `;
+  tbody.appendChild(tr);
 }
 
-function trackOrders() {
-    const order_ids = document.getElementById("order_ids").value.split(",").map(id => id.trim()).filter(id=>id.length>0);
-    if(order_ids.length==0){ alert("Enter at least one order ID"); return; }
+// Build orders array
+function buildOrdersFromTable() {
+  const rows = document.querySelectorAll('#ordersBody tr');
+  const orders = [];
+  rows.forEach(r => {
+    const get = name => {
+      const el = r.querySelector(`[name="${name}"]`);
+      return el ? el.value : null;
+    };
+    const receipt_time_val = get('receipt_time');
+    const receipt_time = receipt_time_val ? new Date(receipt_time_val).toISOString() : null;
 
-    fetch("/track-orders/?"+new URLSearchParams({"order_ids": order_ids}),{method:'GET'})
-    .then(res=>res.json())
-    .then(data=>{
-        const container = document.getElementById("trackingResults");
-        container.innerHTML="";
-        if(data.success){
-            let html="<table class='styled-table'><tr><th>Order ID</th><th>Lat</th><th>Lng</th><th>Last Updated</th></tr>";
-            data.locations.forEach(loc=>{
-                html+=`<tr><td>${loc.order_id}</td><td>${loc.lat.toFixed(4)}</td><td>${loc.lng.toFixed(4)}</td><td>${loc.last_updated}</td></tr>`;
-            });
-            html+="</table>";
-            container.innerHTML=html;
-        }else{
-            container.innerHTML="<div style='background:#fee2e2;color:#b91c1c;padding:10px;'>⚠️ "+data.error+"</div>";
-        }
-    }).catch(err=>alert("Error tracking orders"));
+    const order = {
+      order_id: get('order_id') || "",
+      from_city_name: get('from_city_name') || "",
+      poi_lat: parseFloat(get('poi_lat')) || 0,
+      poi_lng: parseFloat(get('poi_lng')) || 0,
+      receipt_lat: parseFloat(get('receipt_lat')) || 0,
+      receipt_lng: parseFloat(get('receipt_lng')) || 0,
+      receipt_time: receipt_time,
+      sign_lat: parseFloat(get('sign_lat')) || 0,
+      sign_lng: parseFloat(get('sign_lng')) || 0,
+      typecode: get('typecode') || "",
+      trip_km: get('trip_km') ? parseFloat(get('trip_km')) : undefined,
+      num_items: get('num_items') ? parseInt(get('num_items')) : undefined
+    };
+    if (order.order_id || (order.poi_lat && order.poi_lng)) {
+      orders.push(order);
+    }
+  });
+  return orders;
 }
+
+// Predict ETA
+function predictEta() {
+  const orders = buildOrdersFromTable();
+  if (orders.length === 0) { alert('Add at least one order'); return; }
+
+  const csrftoken = getCookie('csrftoken');
+  fetch('/predict-eta/', {
+    method: 'POST',
+    headers: {
+      'Content-Type':'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify({ orders: orders })
+  }).then(r => r.json()).then(data => {
+    const out = document.getElementById('results');
+    if (!data.success) {
+      out.innerHTML = `<div style="background:#fee2e2;color:#b91c1c;padding:10px;">Error: ${data.error}</div>`;
+      return;
+    }
+    let html = '<h4>ETA Predictions</h4><table class="styled-table"><tr><th>Order ID</th><th>ETA (min)</th></tr>';
+    (data.predictions || []).forEach(p => {
+      html += `<tr><td>${p.order_id}</td><td>${Number(p.eta_minutes).toFixed(1)}</td></tr>`;
+    });
+    html += '</table>';
+    out.innerHTML = html;
+  }).catch(e => alert('Request failed: ' + e));
+}
+
+// Init Leaflet map
+let map = L.map('map').setView([0,0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+let markers = {};
+
+// Predict and Track (all orders)
+function predictAndTrack() {
+  const orders = buildOrdersFromTable();
+  if (orders.length === 0) { alert('Add at least one order'); return; }
+
+  const csrftoken = getCookie('csrftoken');
+  fetch('/track-orders-ml/', {
+    method: 'POST',
+    headers: {
+      'Content-Type':'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify({ orders: orders })
+  }).then(r => r.json()).then(data => {
+    const out = document.getElementById('results');
+    if (!data.success) {
+      out.innerHTML = `<div style="background:#fee2e2;color:#b91c1c;padding:10px;">Error: ${data.error}</div>`;
+      return;
+    }
+    let html = '<h4>Tracked Locations (ML)</h4><table class="styled-table">';
+    html += '<tr><th>Order ID</th><th>Lat</th><th>Lng</th><th>Progress</th><th>ETA (min)</th><th>Last Updated</th></tr>';
+    (data.locations || []).forEach(l => {
+      html += `<tr>
+                <td>${l.order_id}</td>
+                <td>${Number(l.lat).toFixed(6)}</td>
+                <td>${Number(l.lng).toFixed(6)}</td>
+                <td>${l.progress}%</td>
+                <td>${l.eta_minutes}</td>
+                <td>${l.last_updated}</td>
+              </tr>`;
+      if (markers[l.order_id]) {
+        markers[l.order_id].setLatLng([l.lat, l.lng]);
+      } else {
+        markers[l.order_id] = L.marker([l.lat, l.lng]).addTo(map).bindPopup(`Order ${l.order_id}`);
+      }
+      map.setView([l.lat, l.lng], 12);
+    });
+    html += '</table>';
+    out.innerHTML = html;
+  }).catch(e => alert('Request failed: ' + e));
+}
+
+// Track single order
+document.getElementById("trackForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  let orderId = document.getElementById("order_id").value;
+  if (!orderId) { alert("Enter Order ID"); return; }
+
+  let response = await fetch("/track-orders-ml/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ "orders": [{ "order_id": orderId }] })
+  });
+  let data = await response.json();
+  if (data.success) {
+    let loc = data.locations[0];
+    map.setView([loc.lat, loc.lng], 14);
+    if (markers[orderId]) {
+      markers[orderId].setLatLng([loc.lat, loc.lng]);
+    } else {
+      markers[orderId] = L.marker([loc.lat, loc.lng]).addTo(map).bindPopup(`Order ${orderId}`);
+    }
+  } else {
+    alert("Error: " + data.error);
+  }
+});
+
+// Auto-refresh all orders every 10 sec
+setInterval(() => {
+  predictAndTrack();
+}, 10000);
 </script>
 
 <style>
-.styled-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 15px 0;
-    font-size: 14px;
-}
-.styled-table th, .styled-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-}
-.styled-table th {
-    background-color: #2563eb;
-    color: #fff;
-}
-.styled-table tr:nth-child(even){background-color:#f9f9f9;}
-.styled-table tr:hover {background-color:#f1f5f9;}
+.styled-table {width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}
+.styled-table th, .styled-table td {border:1px solid #ddd;padding:6px;font-size:12px;}
+.styled-table th {background:#2563eb;color:white;}
+.removeRowBtn {background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;}
+input {width:100%;box-sizing:border-box;padding:6px;}
 </style>
 {% endblock %}

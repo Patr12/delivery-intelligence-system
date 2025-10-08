@@ -5,23 +5,46 @@ from rest_framework import status
 import pandas as pd
 import requests
 from django.views.decorators.csrf import csrf_exempt
-
 import numpy as np
 from django.conf import settings
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.utils.timezone import now
+from datetime import datetime, timedelta
 from geopy.distance import geodesic
 from .models import Courier, Order
 from .ml import model, encoders
 from .utils import hybrid_anomaly_detection, normalize_columns, coerce_times, add_features, featurize_for_model, haversine_km, greedy_assign, clean_data
+from django.http import JsonResponse
 
 
 
 # --- Dashboard ---
 def dashboard(request):
     return render(request, "api/dashboard.html")
+
 def route_search_page(request):
     return render(request, "api/route_co2.html")
+
+
+def route_search(request):
+    query = request.GET.get("q", "").lower().strip()
+
+    all_routes = [
+        {"origin": "Dar es Salaam", "destination": "Moshi", "distance_km": 540},
+        {"origin": "Dar es Salaam", "destination": "Arusha", "distance_km": 500},
+        {"origin": "Moshi", "destination": "Arusha", "distance_km": 200},
+        {"origin": "Dodoma", "destination": "Mwanza", "distance_km": 800},
+    ]
+
+    search_results = [
+        route for route in all_routes
+        if query in route["origin"].lower() or query in route["destination"].lower()
+    ]
+
+    return JsonResponse({"results": search_results})
+
+
+
 def detect_anomalies_page(request):
     return render(request, "api/detect_anomalies_page.html")
 
@@ -205,6 +228,82 @@ def track_orders(request):
     return Response({"success": True, "locations": locations})
 
 
+@api_view(["POST"])
+def track_orders_ml(request):
+    orders = request.data.get("orders", [])
+    if not orders:
+        return Response({"success": False, "error": "No orders provided"}, status=400)
+
+    try:
+        df = prepare_orders(orders)
+        if df.empty:
+            return Response({"success": False, "error": "Invalid order data"}, status=400)
+
+        df = normalize_columns(df)
+        df = coerce_times(df)
+
+        # --- Fill missing coordinates and numeric values ---
+        for col in ['poi_lat','poi_lng','receipt_lat','receipt_lng']:
+            if col not in df.columns:
+                df[col] = 0
+            df[col] = df[col].fillna(0).replace([np.inf, -np.inf], 0)
+
+        # Default speed
+        if "speed_km_min" not in df.columns:
+            df["speed_km_min"] = 0.3
+        df["speed_km_min"] = df["speed_km_min"].fillna(0).replace([np.inf, -np.inf], 0)
+
+        # Default trip_km
+        if "trip_km" not in df.columns:
+            df["trip_km"] = haversine_km(df["poi_lat"], df["poi_lng"], df["receipt_lat"], df["receipt_lng"])
+        df["trip_km"] = df["trip_km"].fillna(1).replace([np.inf, -np.inf], 0)
+
+        # --- Safe add_features ---
+        try:
+            df = add_features(df)
+        except Exception as fe:
+            return Response({"success": False, "error": f"Error in add_features: {fe}"}, status=500)
+
+        # --- Predict ETA ---
+        X, _, _ = featurize_for_model(df, fit_encoders=False, encoders=encoders)
+        preds = model.predict(X)
+        df["eta_minutes"] = preds
+
+        now_time = datetime.now()
+        results=[]
+        for _, row in df.iterrows():
+            receipt_time = row.get("receipt_time")
+            eta_minutes = row.get("eta_minutes", 0)
+            if receipt_time:
+                try:
+                    elapsed_min = (now_time - pd.to_datetime(receipt_time)).total_seconds()/60
+                    progress = min(elapsed_min/eta_minutes, 1.0) if eta_minutes>0 else 0.0
+                except:
+                    progress = 0.0
+            else:
+                progress=0.0
+
+            lat = row["receipt_lat"] + (row["poi_lat"] - row["receipt_lat"])*progress
+            lng = row["receipt_lng"] + (row["poi_lng"] - row["receipt_lng"])*progress
+
+            # fallback kwa sign location
+            if progress>=1 and not pd.isna(row.get("sign_lat")):
+                lat,lng = row["sign_lat"], row["sign_lng"]
+
+            results.append({
+                "order_id": str(row["order_id"]),
+                "lat": float(lat),
+                "lng": float(lng),
+                "progress": round(progress*100,1),
+                "eta_minutes": round(float(eta_minutes),1),
+                "last_updated": now_time.isoformat()
+            })
+
+        return Response({"success": True, "locations": results})
+
+    except Exception as e:
+        return Response({"success": False, "error": str(e)}, status=500)
+
 # --- Optimize Route ---
 @api_view(["POST"])
 def optimize_route(request):
@@ -220,25 +319,58 @@ def optimize_route(request):
     return Response({"success": True, "assignments": optimized.to_dict(orient="records")})
 
 
+# emission factors (kg CO2 per km)
+EMISSION_FACTORS = {
+    "motorbike": 0.12,
+    "car": 0.20,
+    "van": 0.28,
+    "truck": 0.45,
+    "bicycle": 0.0,
+    "electric": 0.05  # assuming renewable mix
+}
 
 @api_view(["POST"])
 def carbon_footprint(request):
     orders = request.data.get("orders", [])
     if not orders:
-        return Response({"success": False, "error": "No orders provided"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"success": False, "error": "No orders provided"}, 
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    df = pd.DataFrame(orders)
-    df = normalize_columns(df)
-    df = add_features(df)
+    try:
+        df = pd.DataFrame(orders)
+        df = normalize_columns(df)
+        df = add_features(df)
 
-    # assume courier type = motorbike
-    factor = 0.12  # kg CO2 per km
-    df["co2_emission_kg"] = df["trip_km"] * factor
+        # kama hakuna courier_type, assume motorbike
+        df["courier_type"] = df.get("courier_type", "motorbike")
 
-    emissions = [{"order_id": str(row["order_id"]), "co2_emission_kg": round(em, 2)} 
-                 for row, em in zip(df.to_dict(orient="records"), df["co2_emission_kg"])]
+        emissions = []
+        for _, row in df.iterrows():
+            courier = row.get("courier_type", "motorbike").lower()
+            factor = EMISSION_FACTORS.get(courier, EMISSION_FACTORS["motorbike"])
 
-    return Response({"success": True, "emissions": emissions})
+            # adjust factor kwa load weight kama ipo
+            weight = row.get("load_kg", 0)
+            if weight > 50:  # mzigo mkubwa => ongeza 10%
+                factor *= 1.1
+            elif weight < 5:  # mzigo mdogo => punguza 5%
+                factor *= 0.95
+
+            co2 = row["trip_km"] * factor
+            emissions.append({
+                "order_id": str(row["order_id"]),
+                "courier_type": courier,
+                "trip_km": round(row["trip_km"], 2),
+                "load_kg": weight,
+                "co2_emission_kg": round(co2, 2)
+            })
+
+        return Response({"success": True, "emissions": emissions})
+
+    except Exception as e:
+        return Response({"success": False, "error": str(e)}, 
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(["GET"])
 def courier_performance(request):
